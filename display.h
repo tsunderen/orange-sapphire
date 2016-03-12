@@ -35,25 +35,25 @@
 #define AQUA 0x07FF
 #define WHITE 0xFFFF
 
-#define FONT CONSOLAS16
-#define FONT_X 8
-#define FONT_Y 16
+#define FONT TERMINAL20
+#define FONT_X 10
+#define FONT_Y 20
 #define FONT_OFFSET 0x20
 
 const uint16_t PALETTE[] = {BLACK, MAROON, GREEN, OLIVE, NAVY, PURPLE, TEAL, SILVER,
 							GRAY, RED, LIME, YELLOW, BLUE, FUCHSIA, AQUA, WHITE};
 
-inline void setLow(uint32_t pin);
-inline void setHigh(uint32_t pin);
-inline uint16_t getBit(uint16_t data, unsigned int bit);
-inline uint16_t getBit(uint16_t data, unsigned int bit, unsigned int len);
+static inline void setLow(uint32_t pin);
+static inline void setHigh(uint32_t pin);
+static inline uint16_t getBit(uint16_t data, unsigned int bit);
+static inline uint16_t getBit(uint16_t data, unsigned int bit, unsigned int len);
 uint16_t getColor(uint8_t red, uint8_t green, uint8_t blue);
 
-void displayInitGPIO();
+static inline void displayInitGPIO();
 void displayReset();
 void displayInit();
 
-void displayWrite(uint16_t data);
+static inline void displayWrite(uint16_t data);
 void displayCommand(uint8_t cmd);
 void displayCommand(uint8_t cmd, unsigned int count, ...);
 void displayData(uint16_t data);
@@ -68,6 +68,11 @@ void drawLine(int x1, int y1, int x2, int y2, uint16_t color);
 void print(char ch, int x, int y, uint16_t color = WHITE, uint16_t background = BLACK);
 void print(const char* str, int x, int y, uint16_t color = WHITE, uint16_t background = BLACK);
 void print(String str, int x, int y, uint16_t color = WHITE, uint16_t background = BLACK);
-void drawBitmap(uint8_t* bitmap, int x, int y, int width, int height);
+void print(int val, int x, int y, uint16_t color = WHITE, uint16_t background = BLACK);
+void print(unsigned int val, int x, int y, uint16_t color = WHITE, uint16_t background = BLACK);
+void print(double val, int x, int y, uint16_t color = WHITE, uint16_t background = BLACK);
+void print(void* val, int x, int y, uint16_t color = WHITE, uint16_t background = BLACK);
+
+void drawBitmap(uint8_t* bitmap, int x, int y, int bits, int width, int height);
 
 #endif

@@ -1,21 +1,21 @@
 #include "display.h"
 
-inline void setLow(uint32_t pin)
+static inline void setLow(uint32_t pin)
 {
 	PIOC->PIO_CODR = pin;
 }
 
-inline void setHigh(uint32_t pin)
+static inline void setHigh(uint32_t pin)
 {
 	PIOC->PIO_SODR = pin;
 }
 
-inline uint16_t getBit(uint16_t data, unsigned int bit)
+static inline uint16_t getBit(uint16_t data, unsigned int bit)
 {
 	return (data >> bit) & 1;
 }
 
-inline uint16_t getBit(uint16_t data, unsigned int bit, unsigned int len)
+static inline uint16_t getBit(uint16_t data, unsigned int bit, unsigned int len)
 {
 	return (data >> bit) & ((1 << len) - 1);
 }
@@ -25,7 +25,7 @@ uint16_t getColor(uint8_t red, uint8_t green, uint8_t blue)
 	return (getBit(red, 3, 5) << 11) | (getBit(green, 2, 6) << 5) | (getBit(blue, 3, 5));
 }
 
-void displayInitGPIO()
+static inline void displayInitGPIO()
 {
 	//Enable PIO
 	REG_PIOA_PER = PIOA_MASK;
@@ -50,9 +50,7 @@ void displayInitGPIO()
 void displayReset()
 {
 	setLow(LCD_RESX);
-	delay(10);
 	setHigh(LCD_RESX);
-	delay(10);
 }
 
 void displayInit()
@@ -75,7 +73,7 @@ void displayInit()
 	displayCommand(0x29);
 }
 
-void displayWrite(uint16_t data)
+static inline void displayWrite(uint16_t data)
 {
 	//Reverse bit order of data
 	uint32_t datarev;
@@ -108,7 +106,7 @@ void displayCommand(uint8_t cmd, unsigned int count, ...)
 	displayCommand(cmd);
 	va_list param;
 	va_start(param, count);
-	for(unsigned int i=0;i<count;i++)
+	for (unsigned int i=0;i<count;i++)
 	{
 		uint8_t arg = va_arg(param, int);
 		displayData(arg);
@@ -125,10 +123,12 @@ void displayData(uint16_t data)
 void displayData(uint16_t data, unsigned int count)
 {
 	displayData(data);
+	asm("nop");
 	for (unsigned int i=0;i<count-1;i++)
 	{
 		setLow(LCD_WRX);
 		setHigh(LCD_WRX);
+		asm("nop");
 	}
 }
 
@@ -170,13 +170,16 @@ void drawLine(int x1, int y1, int x2, int y2, uint16_t color)
 
 void print(char ch, int x, int y, uint16_t color, uint16_t background)
 {
+	if (!isprint(ch))
+		return;
+	int charSize = (FONT_X+7)/8;
 	setRegion(x, y, x+FONT_X-1, y+FONT_Y-1);
 	displayCommand(0x2C);
 	for(int i=0;i<FONT_Y;i++)
 	{
-		for(int j=FONT_X-1;j>=0;j--)
+		for(int j=0;j<FONT_X;j++)
 		{
-			if ((FONT[ch-FONT_OFFSET][i] >> j) & 1)
+			if (getBit(FONT[ch-FONT_OFFSET][i*charSize+j/8], 7-(j%8)))
 				displayData(color);
 			else
 				displayData(background);
@@ -196,13 +199,59 @@ void print(String str, int x, int y, uint16_t color, uint16_t background)
 	print(str.c_str(), x, y, color, background);
 }
 
-void drawBitmap(uint8_t* bitmap, int x, int y, int width, int height)
+void print(int val, int x, int y, uint16_t color, uint16_t background)
 {
+	char buf[32];
+	snprintf(buf, 32, "%d", val);
+	print(buf, x, y, color, background);
+}
+
+void print(unsigned int val, int x, int y, uint16_t color, uint16_t background)
+{
+	char buf[32];
+	snprintf(buf, 32, "%u", val);
+	print(buf, x, y, color, background);
+}
+
+void print(double val, int x, int y, uint16_t color, uint16_t background)
+{
+	char buf[32];
+	snprintf(buf, 32, "%g", val);
+	print(buf, x, y, color, background);
+}
+
+void print(void* val, int x, int y, uint16_t color, uint16_t background)
+{
+	char buf[32];
+	snprintf(buf, 32, "%p", val);
+	print(buf, x, y, color, background);
+}
+
+void drawBitmap(uint8_t* bitmap, int x, int y, int bits, int width, int height)
+{
+	int rowSize = (width*bits+7)/8;         //Align to byte
+//	int rowSize = (width*bits+31)/32*4;     //Align to 4 bytes
 	setRegion(x, y, x+width-1, y+height-1);
 	displayCommand(0x2C);
-	for(int i=0;i<height;i++)
+	if (bits==1)                    //Monochrome
 	{
-		for(int j=0;j<width;j++)
-			displayData(bitmap[(i*width+j)*2] | (bitmap[(i*width+j)*2+1] << 8));
+		for(int i=0;i<height;i++)
+			for(int j=0;j<width;j++)
+				displayData((uint16_t)(-1) + getBit(bitmap[i*rowSize+j/8], 7-(j%8)));
+	}
+	else if (bits==8)               //RGB332
+	{
+		for(int i=0;i<height;i++)
+			for(int j=0;j<width;j++)
+			{
+				uint8_t pixel = bitmap[i*rowSize+j];
+				displayData(getColor(getBit(pixel, 5, 3), getBit(pixel, 2, 3), getBit(pixel, 0, 2)));
+			}
+	}
+	else if (bits==16)              //RGB565
+	{
+		for(int i=0;i<height;i++)
+			for(int j=0;j<width;j++)
+				displayData(bitmap[i*rowSize+j*2] | (bitmap[i*rowSize+j*2+1] << 8));
 	}
 }
