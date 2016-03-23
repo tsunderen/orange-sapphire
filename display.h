@@ -2,7 +2,6 @@
 #define DISPLAY_H
 
 #include "Arduino.h"
-#include "font.h"
 
 #define LCD_DCX PIO_PC6
 #define LCD_WRX PIO_PC7
@@ -35,19 +34,15 @@
 #define AQUA 0x07FF
 #define WHITE 0xFFFF
 
-#define FONT TERMINAL20
-#define FONT_X 10
-#define FONT_Y 20
-#define FONT_OFFSET 0x20
-
-const uint16_t PALETTE[] = {BLACK, MAROON, GREEN, OLIVE, NAVY, PURPLE, TEAL, SILVER,
-							GRAY, RED, LIME, YELLOW, BLUE, FUCHSIA, AQUA, WHITE};
-
 static inline void setLow(uint32_t pin);
 static inline void setHigh(uint32_t pin);
 static inline uint16_t getBit(uint16_t data, unsigned int bit);
 static inline uint16_t getBit(uint16_t data, unsigned int bit, unsigned int len);
-uint16_t getColor(uint8_t red, uint8_t green, uint8_t blue);
+
+uint16_t color16(uint8_t red, uint8_t green, uint8_t blue);
+uint16_t color16(uint8_t color256);
+uint8_t color8(uint8_t red, uint8_t green, uint8_t blue);
+uint8_t color8(uint16_t color);
 
 static inline void displayInitGPIO();
 void displayReset();
@@ -65,14 +60,7 @@ void fillRegion(int x1, int y1, int x2, int y2, uint16_t color);
 void drawPixel(int x, int y, uint16_t color);
 void drawLine(int x1, int y1, int x2, int y2, uint16_t color);
 
-void print(char ch, int x, int y, uint16_t color = WHITE, uint16_t background = BLACK);
-void print(const char* str, int x, int y, uint16_t color = WHITE, uint16_t background = BLACK);
-void print(String str, int x, int y, uint16_t color = WHITE, uint16_t background = BLACK);
-void print(int val, int x, int y, uint16_t color = WHITE, uint16_t background = BLACK);
-void print(unsigned int val, int x, int y, uint16_t color = WHITE, uint16_t background = BLACK);
-void print(double val, int x, int y, uint16_t color = WHITE, uint16_t background = BLACK);
-void print(void* val, int x, int y, uint16_t color = WHITE, uint16_t background = BLACK);
-
-void drawBitmap(uint8_t* bitmap, int x, int y, int bits, int width, int height);
+void drawBitmap(const uint8_t* bitmap, int x, int y, int bits, int width, int height);
+void drawBitmap(const uint8_t* bitmap, int x, int y, int width, int height, uint16_t color, uint16_t background);
 
 #endif
