@@ -1,23 +1,23 @@
 #include "display.h"
 
-static inline void setLow(uint32_t pin)
+inline void setLow(int pin)
 {
 	PIOC->PIO_CODR = pin;
 }
 
-static inline void setHigh(uint32_t pin)
+inline void setHigh(int pin)
 {
 	PIOC->PIO_SODR = pin;
 }
 
-static inline uint16_t getBit(uint16_t data, unsigned int bit)
+inline unsigned int getBit(unsigned int data, int bit)
 {
 	return (data >> bit) & 1;
 }
 
-static inline uint16_t getBit(uint16_t data, unsigned int bit, unsigned int len)
+inline unsigned int getBit(unsigned int data, int bit, int len)
 {
-	return (data >> bit) & ((1 << len) - 1);
+	return (data << (32 - bit - len)) >> (32 - len);
 }
 
 uint16_t color16(uint8_t red, uint8_t green, uint8_t blue)
@@ -43,7 +43,7 @@ uint8_t color8(uint16_t color)
 	return (getBit(color, 13, 3) << 5) | (getBit(color, 8, 3) << 2) | (getBit(color, 3, 2));
 }
 
-static inline void displayInitGPIO()
+inline void displayInitGPIO()
 {
 	//Enable PIO
 	REG_PIOA_PER = PIOA_MASK;
@@ -89,7 +89,7 @@ void displayInit()
 	displayCommand(0x29);
 }
 
-static inline void displayWrite(uint16_t data)
+inline void displayWrite(uint16_t data)
 {
 	//Reverse bit order of data
 	uint32_t datarev;
@@ -111,7 +111,7 @@ static inline void displayWrite(uint16_t data)
 	setHigh(LCD_WRX);
 }
 
-void displayCommand(uint8_t cmd)
+inline void displayCommand(uint8_t cmd)
 {
 	setLow(LCD_DCX);
 	displayWrite(cmd);
@@ -130,7 +130,7 @@ void displayCommand(uint8_t cmd, unsigned int count, ...)
 	va_end(param);
 }
 
-void displayData(uint16_t data)
+inline void displayData(uint16_t data)
 {
 	setHigh(LCD_DCX);
 	displayWrite(data);

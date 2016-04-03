@@ -34,24 +34,24 @@
 #define AQUA 0x07FF
 #define WHITE 0xFFFF
 
-static inline void setLow(uint32_t pin);
-static inline void setHigh(uint32_t pin);
-static inline uint16_t getBit(uint16_t data, unsigned int bit);
-static inline uint16_t getBit(uint16_t data, unsigned int bit, unsigned int len);
+inline void setLow(int pin);
+inline void setHigh(int pin);
+inline unsigned int getBit(unsigned int data, int bit);
+inline unsigned int getBit(unsigned int data, int bit, int len);
 
 uint16_t color16(uint8_t red, uint8_t green, uint8_t blue);
 uint16_t color16(uint8_t color256);
 uint8_t color8(uint8_t red, uint8_t green, uint8_t blue);
 uint8_t color8(uint16_t color);
 
-static inline void displayInitGPIO();
+inline void displayInitGPIO();
 void displayReset();
 void displayInit();
 
-static inline void displayWrite(uint16_t data);
-void displayCommand(uint8_t cmd);
+inline void displayWrite(uint16_t data);
+inline void displayCommand(uint8_t cmd);
 void displayCommand(uint8_t cmd, unsigned int count, ...);
-void displayData(uint16_t data);
+inline void displayData(uint16_t data);
 void displayData(uint16_t data, unsigned int count);
 
 void setRegion(int x1, int y1, int x2, int y2);
