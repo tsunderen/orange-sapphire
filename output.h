@@ -3,9 +3,7 @@
 
 #include "display.h"
 #include "font.h"
-
-static inline uint16_t getBit(uint16_t data, unsigned int bit);
-static inline uint16_t getBit(uint16_t data, unsigned int bit, unsigned int len);
+#include "cursor.h"
 
 class Output
 {
@@ -17,12 +15,11 @@ class Output
 		int fontY;
 
 		uint32_t* buffer;                   //[31:24]=Background(RGB332) [23:8]=Foreground(RGB565) [7:0]=Character
-		int x;
-		int y;
 		int offset;                         //Buffer address offset of the first line
-		
-		int staticX;                        //Static cursor will change when screen scrolls
-		int staticY;
+
+		Cursor curMain;                     //Output cursor
+		Cursor curHead;                     //Input head
+		Cursor curInput;                    //Input cursor
 		
 		uint16_t color;
 		uint8_t background;
@@ -52,11 +49,10 @@ class Output
 		int getX();
 		int getY();
 
-		void setStaticCur(int x, int y);	//Static cursor
-		void setStaticX(int x);
-		void setStaticY(int y);
-		int getStaticX();
-		int getStaticY();
+		void setHeadCursor();               //Set input head to current main cursor
+		void setInputCursor(int offset);    //Set input cursor relative to input head
+		void useHeadCursor();               //Set main cursor to input head
+		void useInputCursor();              //set main cursor to input cursor
 
 		void setColor(uint16_t c);
 		uint16_t getColor();
@@ -71,6 +67,12 @@ class Output
 		int printfxyc(const char* format, int x, int y, uint16_t color, ...);
 		int printfxycb(const char* format, int x, int y, uint16_t color, uint16_t background, ...);
 
+		Output& operator<<(int var);
+		Output& operator<<(unsigned int var);
+		Output& operator<<(double var);
+		Output& operator<<(char var);
+		Output& operator<<(const char* var);
+		Output& operator<<(void* var);
 };
 
 #endif

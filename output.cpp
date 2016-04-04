@@ -1,15 +1,5 @@
 #include "output.h"
 
-static inline uint16_t getBit(uint32_t data, unsigned int bit)
-{
-	return (data >> bit) & 1;
-}
-
-static inline uint16_t getBit(uint32_t data, unsigned int bit, unsigned int len)
-{
-	return (data >> bit) & ((1 << len) - 1);
-}
-
 const uint16_t Output::PALETTE[] = {BLACK, MAROON, GREEN, OLIVE, NAVY, PURPLE, TEAL, SILVER,
 									GRAY, RED, LIME, YELLOW, BLUE, FUCHSIA, AQUA, WHITE};
 
@@ -17,6 +7,9 @@ Output::Output(int width, int height, const uint8_t* font, int fontX, int fontY)
 	: width(width), height(height), font(font), fontX(fontX), fontY(fontY)
 {
 	buffer = new uint32_t[width * height];
+	curMain = Cursor(width, height);
+	curHead = Cursor(width, height);
+	curInput = Cursor(width, height);
 }
 
 Output::~Output()
@@ -39,11 +32,10 @@ void Output::reset()
 void Output::clear()
 {
 	memset(buffer, 0, width * height * sizeof(uint32_t));
-	x = 0;
-	y = 0;
 	offset = 0;
-	staticX = 0;
-	staticY = 0;
+	curMain.clear();
+	curHead.clear();
+	curInput.clear();
 	color = LIME;
 	background = color8(BLACK);
 	::clear();
@@ -59,15 +51,15 @@ void Output::redraw(int line)
 {
 	for (int x=0;x<width;x++)
 	{
-		uint32_t ch = buffer[((offset+line)%height)*width+x];
-		uint16_t background = color16(getBit(ch, 24, 8));
-		if (!getBit(ch, 0, 8))
+		uint32_t* ch = &buffer[((offset+line)%height)*width+x];
+		uint16_t background = color16(*((char*)ch+3));
+		if (!(*(char*)ch))
 		{
 			fillRegion(x*fontX, line*fontY, (x+1)*fontX-1, (line+1)*fontY-1, background);
 			continue;
 		}
-		uint16_t color = getBit(ch, 8, 16);
-		const uint8_t* bitmap = font + (getBit(ch, 0, 8)-0x20) * ((fontX+7)/8) * fontY;
+		uint16_t color = *(uint16_t*)((char*)ch+1);
+		const uint8_t* bitmap = font + (*(char*)ch-0x20) * ((fontX+7)/8) * fontY;
 		drawBitmap(bitmap, x*fontX, line*fontY, fontX, fontY, color, background);
 	}
 }
@@ -82,54 +74,46 @@ void Output::setX(int x)
 {
 	if (x < 0 || x >= width)
 		return;
-	this->x = x;
+	curMain.x = x;
 }
 
 void Output::setY(int y)
 {
 	if (y < 0 || y >= height)
 		return;
-	this->y = y;
+	curMain.y = y;
 }
 
 int Output::getX()
 {
-	return x;
+	return curMain.x;
 }
 
 int Output::getY()
 {
-	return y;
+	return curMain.y;
 }
 
-void Output::setStaticCur(int x, int y)
+void Output::setHeadCursor()
 {
-	setStaticX(x);
-	setStaticY(y);
+	curHead = curMain;
+	curInput = curHead;
 }
 
-void Output::setStaticX(int x)
+void Output::setInputCursor(int offset)
 {
-	if (x < 0 || x >= width)
-		return;
-	staticX = x;
+	curInput = curHead;
+	curInput += offset;
 }
 
-void Output::setStaticY(int y)
+void Output::useHeadCursor()
 {
-	if (y < 0 || y >= height)
-		return;
-	staticY = y;
+	curMain = curHead;
 }
 
-int Output::getStaticX()
+void Output::useInputCursor()
 {
-	return staticX;
-}
-
-int Output::getStaticY()
-{
-	return staticY;
+	curMain = curInput;
 }
 
 void Output::setColor(uint16_t c)
@@ -169,27 +153,28 @@ void Output::print(const char* str)
 
 void Output::print(char ch, uint16_t color, uint8_t background)
 {
-	if (x >= width)
+	if (curMain.x >= width)
 	{
-		x = 0;
-		y++;
+		curMain.x = 0;
+		curMain.y++;
 	}
-	if (y >= height)                //Scroll down the screen
+	if (curMain.y >= height)                //Scroll down the screen
 	{
-		y--;
-		staticY--;
+		curMain.y--;
+		curHead.y--;
+		curInput.y--;
 		offset = (offset+1) % height;
-		memset(buffer + ((offset+y)%height) * width, 0, width * sizeof(uint32_t));
+		memset(buffer + ((offset+curMain.y)%height) * width, 0, width * sizeof(uint32_t));
 		redraw();
 	}
-	print(ch, x, y, color, background);
+	print(ch, curMain.x, curMain.y, color, background);
 	if (ch == '\n')
 	{
-		x = 0;
-		y++;
+		curMain.x = 0;
+		curMain.y++;
 	}
 	else
-		x++;
+		curMain.x++;
 }
 
 void Output::print(const char* str, uint16_t color, uint8_t background)
@@ -279,4 +264,40 @@ int Output::printfxycb(const char* format, int x, int y, uint16_t color, uint16_
 	va_end(arg);
 	print(buf, x, y, color, color8(background));
 	return count;
+}
+
+Output& Output::operator<<(int var)
+{
+	printf("%d", var);
+	return *this;
+}
+
+Output& Output::operator<<(unsigned int var)
+{
+	printf("%u", var);
+	return *this;
+}
+
+Output& Output::operator<<(double var)
+{
+	printf("%g", var);
+	return *this;
+}
+
+Output& Output::operator<<(char var)
+{
+	printf("%c", var);
+	return *this;
+}
+
+Output& Output::operator<<(const char* var)
+{
+	printf("%s", var);
+	return *this;
+}
+
+Output& Output::operator<<(void* var)
+{
+	printf("%p", var);
+	return *this;
 }
