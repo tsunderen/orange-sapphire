@@ -25,55 +25,51 @@ const char* Input::get()
 	return buffer;
 }
 
-int Input::getCursor()
-{
-	return cursor;
-}
-
 int Input::getLength()
 {
 	return length;
 }
 
-bool Input::read()
+int Input::getCursor()
 {
-	int code = Serial.read();
-	if (code == 0 || code == 13)            //End-of-line
-	{
-		end = true;
-		return true;
-	}
-	if (code == -1 || length >= size-1)     //No input or overflow
+	return cursor;
+}
+
+bool Input::setCursor(int newCursor)
+{
+	if (newCursor < 0 || newCursor > length)
 		return false;
-    if (isprint(code))
-    {
-    	for (int i=length;i>cursor;i--)
-			buffer[i] = buffer[i-1];
-		buffer[cursor] = code;
-		cursor++;
-		length++;
-		return true;
-	}
-	if (code == 127)						//Backspace
-	{
-		if (cursor == 0)
-			return false;
-		for (int i=cursor;i<length;i++)
-			buffer[i-1] = buffer[i];
-		buffer[length-1] = '\0';
-		cursor--;
-		length--;
-		return true;
-	}
-	if (code == 9)							//Tab
-	{
+	cursor = newCursor;
+	return true;
+}
+
+bool Input::moveCursor(int offset)
+{
+	return setCursor(cursor + offset);
+}
+
+bool Input::read(char code)
+{
+	if (length >= size - 1)
 		return false;
-	}
-	if (code == 27)							//Escaped character
-	{
-		return true;
-	}
-	return false;
+	for (int i=length;i>cursor;i--)
+		buffer[i] = buffer[i-1];
+	buffer[cursor] = code;
+	cursor++;
+	length++;
+	return true;
+}
+
+bool Input::erase()
+{
+	if (cursor == 0)
+		return false;
+	for (int i=cursor;i<length;i++)
+		buffer[i-1] = buffer[i];
+	buffer[length-1] = '\0';
+	cursor--;
+	length--;
+	return true;
 }
 
 bool Input::eof()

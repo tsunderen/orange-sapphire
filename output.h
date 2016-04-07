@@ -3,7 +3,6 @@
 
 #include "display.h"
 #include "font.h"
-#include "cursor.h"
 
 class Output
 {
@@ -17,12 +16,27 @@ class Output
 		uint32_t* buffer;                   //[31:24]=Background(RGB332) [23:8]=Foreground(RGB565) [7:0]=Character
 		int offset;                         //Buffer address offset of the first line
 
-		Cursor curMain;                     //Output cursor
-		Cursor curHead;                     //Input head
-		Cursor curInput;                    //Input cursor
+		int x;                              //Output location
+		int y;
+		int cursorX;                        //Cursor location
+		int cursorY;
 		
 		uint16_t color;
 		uint8_t background;
+
+		//Helper function for screen buffer
+		uint32_t* getBufferAddress(int x, int y);
+		const uint8_t* getFontAddress(char ch);
+		
+		void setChar(uint32_t* buf, char ch);
+		char getChar(uint32_t* buf);
+		void setColor(uint32_t* buf, uint16_t color);
+		uint16_t getColor(uint32_t* buf);
+		void setBackground(uint32_t* buf, uint8_t background);
+		uint8_t getBackground(uint32_t* buf);
+
+		void draw(int x, int y);
+		void drawCursor(int x, int y);
 
 		void print(char ch);
 		void print(const char* str);
@@ -40,19 +54,11 @@ class Output
 		void init();						//Hardware initialization
 		void reset();						//Hardware reset
 		void clear();						//Clear buffer and screen, reset cursor
-		void redraw();
-		void redraw(int line);
+		void draw();
 
-		void setCur(int x, int y);			//Main cursor
-		void setX(int x);
-		void setY(int y);
-		int getX();
-		int getY();
-
-		void setHeadCursor();               //Set input head to current main cursor
-		void setInputCursor(int offset);    //Set input cursor relative to input head
-		void useHeadCursor();               //Set main cursor to input head
-		void useInputCursor();              //set main cursor to input cursor
+		void setCursor();
+		void moveCursor(int move);
+		void useCursor();
 
 		void setColor(uint16_t c);
 		uint16_t getColor();
