@@ -1,20 +1,18 @@
 #ifndef INPUT_H
 #define INPUT_H
 
-#include "Arduino.h"
+#include <Arduino.h>
 
 class Input
 {
 	private:
-		int size;
-		char* buffer;
+		static const int SIZE = 256;
+		char buffer[SIZE];
 		int cursor;
 		int length;
-		bool end;
 
 	public:
-		Input(int size);
-		~Input();
+		Input();
 
 		void clear();
 		const char* get();
@@ -25,8 +23,12 @@ class Input
 
 		bool read(char code);
 		bool erase();
-		bool eof();
 		int scanf(const char* format, ...);
 };
+
+namespace std
+{
+	extern Input cin;
+}
 
 #endif

@@ -1,23 +1,16 @@
 #include "input.h"
 
-Input::Input(int size)
-	: size(size), cursor(0), length(0), end(false)
+Input::Input()
+	: cursor(0), length(0)
 {
-	buffer = new char[size];
-	memset(buffer, 0, size);
-}
-
-Input::~Input()
-{
-	delete[] buffer;
+	memset(buffer, 0, SIZE);
 }
 
 void Input::clear()
 {
-	memset(buffer, 0, size);
+	memset(buffer, 0, SIZE);
 	cursor = 0;
 	length = 0;
-	end = false;
 }
 
 const char* Input::get()
@@ -50,7 +43,7 @@ bool Input::moveCursor(int offset)
 
 bool Input::read(char code)
 {
-	if (length >= size - 1)
+	if (length >= SIZE - 1)
 		return false;
 	for (int i=length;i>cursor;i--)
 		buffer[i] = buffer[i-1];
@@ -72,11 +65,6 @@ bool Input::erase()
 	return true;
 }
 
-bool Input::eof()
-{
-	return end;
-}
-
 int Input::scanf(const char* format, ...)
 {
 	va_list arg;
@@ -84,4 +72,9 @@ int Input::scanf(const char* format, ...)
 	int count = vsscanf(buffer, format, arg);
 	va_end(arg);
 	return count;
+}
+
+namespace std
+{
+	Input cin;
 }

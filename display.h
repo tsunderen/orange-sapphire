@@ -1,7 +1,7 @@
 #ifndef DISPLAY_H
 #define DISPLAY_H
 
-#include "Arduino.h"
+#include <Arduino.h>
 
 #define LCD_DCX PIO_PC6
 #define LCD_WRX PIO_PC7

@@ -1,7 +1,6 @@
 #include "system.h"
 
-System::System(Input& in, Output& out)
-	: cin(in), cout(out)
+System::System()
 {
 	clearBuf();
 }
@@ -10,6 +9,36 @@ void System::clearBuf()
 {
 	memset(eventBuf, 0, 8);
 	eventLen = -1;                              //Disable event mode
+}
+
+void System::prompt()
+{
+	cout<<endl<<">";
+	cout.setCursor();
+}
+
+void System::init()
+{
+	cout.init();
+	cout<<"Booting..."<<endl;
+
+	disk = false;
+	/*
+	if (SD.begin(53))
+	{
+		cout<<"Disk found!\n";
+		disk = true;
+	}
+	else
+		cout.printfc("Disk not found!\n", RED);
+	*/
+
+	cout<<endl;
+	cout.printfc("Orange ", color16(255, 128, 0));
+	cout.printfc("Sapphire ", color16(0, 0, 255));
+	cout.printfcb("%d", BLACK, WHITE, 19895);
+
+	prompt();
 }
 
 void System::event(char code)
@@ -47,30 +76,29 @@ void System::event(char code)
 		}
 		else if (eventLen == 8)
 			clearBuf();
-		return;
 	}
-	if (code == 13)                             //Enter
-	{
-		cout<<"\n";
-		exec(cin.get());
-		cin.clear();
-		prompt();
-	}
-	if (isprint(code))
+	else if (isprint(code))
 	{
 		if (cin.read(code))
 		{
-			cout.useCursor();
+			cout.setOutput();
 			cout<<cin.get()+cin.getCursor()-1;
 			cout.moveCursor(1);
 		}
+	}
+	else if (code == 13)                         //Enter
+	{
+		cout<<endl;
+		exec(cin.get());
+		cin.clear();
+		prompt();
 	}
 	else if (code == 127)						//Backspace
 	{
 		if (cin.erase())
 		{
 			cout.moveCursor(-1);
-			cout.useCursor();
+			cout.setOutput();
 			cout<<cin.get()+cin.getCursor();
 			cout<<" ";
 			cout.moveCursor(0);
@@ -80,21 +108,25 @@ void System::event(char code)
 		eventLen = 0;                           //Enable event mode
 }
 
-void System::prompt()
+void System::exec(const char* command)
 {
-	cout<<"\n>";
-	cout.setCursor();
-}
-
-void System::exec(const char* cmd)
-{
-	char exp[256];
-	strcpy(exp, cmd);
-	Expr expr(exp);
+	char cmd[256];
+	strcpy(cmd, command);
+	int argc = 0;
+	char* argv[8];
+	char* pch = strtok(cmd, " ");
+	while (argc < 8 && pch != NULL)
+	{
+		argv[argc] = strdup(pch);
+		pch = strtok(NULL, " ");
+		argc++;
+	}
+	Expr expr(argv[0]);
 	Result result = expr.eval();
 	if (result.error)
 		cout.printfc("ERROR: %d\n", RED, result.error);
 	else
 		cout.printf("%.10g\n", result.value);
+	for (int i=0;i<argc;i++)
+		free(argv[i]);
 }
-
